@@ -1,69 +1,43 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>傾斜割り勘</title>
-
-<!-- PWA: ホーム画面追加 + 全画面表示 -->
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="傾斜割り勘">
-<meta name="theme-color" content="#0f1117">
-<meta name="application-name" content="傾斜割り勘">
-
-<!-- Inline Web App Manifest (data URI) -->
-<link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22%E5%82%BE%E6%96%9C%E5%89%B2%E3%82%8A%E5%8B%98%22%2C%22short_name%22%3A%22%E5%82%BE%E6%96%9C%E5%89%B2%E5%8B%98%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f1117%22%2C%22theme_color%22%3A%22%230f1117%22%2C%22icons%22%3A%5B%5D%7D">
-
-<!-- Favicon: ビール絵文字のSVG -->
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍻</text></svg>">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍻</text></svg>">
-
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html { -webkit-text-size-adjust: 100%; }
-  body {
-    font-family: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
-    background: linear-gradient(160deg, #0f1117 0%, #161822 50%, #1a1520 100%);
-    color: #f0ead6;
-    min-height: 100vh;
-    min-height: 100dvh;
-    padding: 0;
-    /* iOS safe area */
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-    -webkit-tap-highlight-color: transparent;
-    overscroll-behavior: none;
-  }
-  input[type="number"]::-webkit-inner-spin-button,
-  input[type="number"]::-webkit-outer-spin-button {
-    -webkit-appearance: none; margin: 0;
-  }
-  input[type="number"] { -moz-appearance: textfield; }
-  input[type="range"] { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 3px; background: #2a2d3a; outline: none; }
-  input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
-    background: #f59e0b; border: 2px solid #0f1117; cursor: pointer;
-  }
-  input[type="range"]::-moz-range-thumb {
-    width: 22px; height: 22px; border-radius: 50%;
-    background: #f59e0b; border: 2px solid #0f1117; cursor: pointer;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f1117" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="先輩は多め、後輩は少なめ。学年に応じた傾斜割り勘計算アプリ" />
+  <title>傾斜割り勘</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍻</text></svg>" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { background: #0f1117; overflow-y: scroll; -webkit-overflow-scrolling: touch; }
+    input[type="range"] { -webkit-appearance: none; appearance: none; background: #2a2d3a; border-radius: 3px; }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #f59e0b; cursor: pointer; border: 2px solid #0f1117;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #f59e0b; cursor: pointer; border: 2px solid #0f1117;
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
+    #root { min-height: 100vh; min-height: 100dvh; }
+  </style>
 </head>
 <body>
+  <div id="root"></div>
 
-<div id="app"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.2/babel.min.js"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
-<script>
-'use strict';
-
-const e = React.createElement;
+  <script type="text/babel">
 const { useState } = React;
 
 const PRESETS = [
@@ -82,66 +56,58 @@ function calcPayments(total, groups, roundUnit) {
       collectedTotal: 0,
     };
   }
+
   const avgWeight = groups.reduce((s, g) => s + g.weight * g.count, 0) / totalPeople;
   const rawPerPerson = total / totalPeople;
+
   const results = groups.map((g, i) => {
     const ratio = g.weight / avgWeight;
     const raw = rawPerPerson * ratio;
     const perPerson = Math.ceil(raw / roundUnit) * roundUnit;
     return { ...g, perPerson, subtotal: perPerson * g.count, idx: i };
   });
+
   const collectedTotal = results.reduce((s, r) => s + r.subtotal, 0);
   return { results, collectedTotal };
-}
-
-// Color constants
-const bg = "#0f1117", card = "#1a1d27", cardBorder = "#2a2d3a";
-const accent = "#f59e0b", accentDim = "#92610a";
-const textPrimary = "#f0ead6", textSecondary = "#8a8d9a";
-const danger = "#ef4444", success = "#22c55e";
-
-// Reusable style helpers
-const cardStyle = {
-  background: card, border: "1px solid " + cardBorder,
-  borderRadius: 14, padding: "18px 20px", marginBottom: 14,
-};
-const labelStyle = { fontSize: 12, color: textSecondary, fontWeight: 600, letterSpacing: 1 };
-
-function btnStyle(active) {
-  return {
-    background: active ? accent : "#13151f",
-    color: active ? bg : textSecondary,
-    border: "1px solid " + (active ? accent : cardBorder),
-    borderRadius: 8, padding: "6px 12px", fontSize: 12,
-    fontWeight: 600, cursor: "pointer", transition: "all 0.15s",
-  };
 }
 
 function WarikanKeisha() {
   const [total, setTotal] = useState(30000);
   const [presetIdx, setPresetIdx] = useState(0);
   const [groups, setGroups] = useState(
-    PRESETS[0].grades.map((name, i) => ({ name, count: i === 0 ? 3 : 2, weight: i + 1 }))
+    PRESETS[0].grades.map((name, i) => ({
+      name,
+      count: i === 0 ? 3 : 2,
+      weight: i + 1,
+    }))
   );
   const [steepness, setSteepness] = useState(50);
+  const [steepnessInput, setSteepnessInput] = useState("50");
   const [roundUnit, setRoundUnit] = useState(100);
   const [kanjiName, setKanjiName] = useState("");
   const [kanjiGradeIdx, setKanjiGradeIdx] = useState(null);
 
   const effectiveKanjiGradeIdx =
-    kanjiGradeIdx !== null ? kanjiGradeIdx
-    : groups.reduce((mi, g, i, arr) => (g.weight > arr[mi].weight ? i : mi), 0);
+    kanjiGradeIdx !== null
+      ? kanjiGradeIdx
+      : groups.reduce((mi, g, i, arr) => (g.weight > arr[mi].weight ? i : mi), 0);
 
   const applyPreset = (idx) => {
     setPresetIdx(idx);
     setKanjiGradeIdx(null);
     if (idx < 2) {
-      setGroups(PRESETS[idx].grades.map((name, i) => ({ name, count: 2, weight: i + 1 })));
+      setGroups(
+        PRESETS[idx].grades.map((name, i) => ({
+          name,
+          count: 2,
+          weight: i + 1,
+        }))
+      );
     }
   };
 
   const addGroup = () => {
-    setGroups([...groups, { name: "グループ" + (groups.length + 1), count: 1, weight: groups.length + 1 }]);
+    setGroups([...groups, { name: `グループ${groups.length + 1}`, count: 1, weight: groups.length + 1 }]);
     setPresetIdx(2);
   };
 
@@ -157,7 +123,8 @@ function WarikanKeisha() {
   };
 
   const adjustedGroups = groups.map((g) => ({
-    ...g, weight: Math.pow(g.weight, steepness / 50),
+    ...g,
+    weight: Math.pow(g.weight, steepness / 50),
   }));
 
   const { results, collectedTotal } = calcPayments(total, adjustedGroups, roundUnit);
@@ -165,318 +132,615 @@ function WarikanKeisha() {
   const equalPer = totalPeople > 0 ? Math.round(total / totalPeople) : 0;
   const kanjiProfit = collectedTotal - total;
 
-  // --- Render ---
-  return e("div", { style: { padding: "20px 16px 40px" } },
-    e("div", { style: { maxWidth: 520, margin: "0 auto" } },
+  const bg = "#0f1117";
+  const card = "#1a1d27";
+  const cardBorder = "#2a2d3a";
+  const accent = "#f59e0b";
+  const accentDim = "#92610a";
+  const textPrimary = "#f0ead6";
+  const textSecondary = "#8a8d9a";
+  const danger = "#ef4444";
+  const success = "#22c55e";
 
-      // Header
-      e("div", { style: { textAlign: "center", marginBottom: 28 } },
-        e("div", { style: { fontSize: 40, marginBottom: 4 } }, "🍻"),
-        e("h1", { style: {
-          fontSize: 26, fontWeight: 800, letterSpacing: "-0.5px", margin: 0,
-          background: "linear-gradient(135deg, " + accent + ", #fbbf24, " + accent + ")",
-          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-        }}, "傾斜割り勘"),
-        e("p", { style: { color: textSecondary, fontSize: 13, margin: "6px 0 0" } },
-          "先輩は多め、後輩は少なめ。幹事はちょっと得する。")
-      ),
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: `linear-gradient(160deg, ${bg} 0%, #161822 50%, #1a1520 100%)`,
+        color: textPrimary,
+        fontFamily: "'Noto Sans JP', 'Hiragino Sans', sans-serif",
+        padding: "20px 16px 40px",
+      }}
+    >
+      <div style={{ maxWidth: 520, margin: "0 auto" }}>
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div style={{ fontSize: 40, marginBottom: 4 }}>🍻</div>
+          <h1
+            style={{
+              fontSize: 26,
+              fontWeight: 800,
+              letterSpacing: "-0.5px",
+              margin: 0,
+              background: `linear-gradient(135deg, ${accent}, #fbbf24, #f59e0b)`,
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            傾斜割り勘
+          </h1>
+          <p style={{ color: textSecondary, fontSize: 13, margin: "6px 0 0" }}>
+            先輩は多め、後輩は少なめ。幹事はちょっと得する。
+          </p>
+        </div>
 
-      // Total Amount
-      e("div", { style: cardStyle },
-        e("label", { style: labelStyle }, "合計金額"),
-        e("div", { style: { display: "flex", alignItems: "center", gap: 8, marginTop: 8 } },
-          e("span", { style: { fontSize: 22, color: accent, fontWeight: 700 } }, "¥"),
-          e("input", {
-            type: "number", inputMode: "numeric", value: total,
-            onChange: (ev) => setTotal(Math.max(0, parseInt(ev.target.value) || 0)),
-            style: {
-              flex: 1, background: "#13151f", border: "1px solid " + cardBorder,
-              borderRadius: 10, padding: "12px 16px", fontSize: 24, fontWeight: 700,
-              color: textPrimary, outline: "none", textAlign: "right",
-            },
-          })
-        ),
-        e("div", { style: { display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" } },
-          ...[10000, 20000, 30000, 50000, 100000].map((amt) =>
-            e("button", {
-              key: amt, onClick: () => setTotal(amt),
-              style: btnStyle(total === amt),
-            }, (amt / 10000).toFixed(0) + "万")
-          )
-        )
-      ),
+        {/* Total Amount */}
+        <div
+          style={{
+            background: card,
+            border: `1px solid ${cardBorder}`,
+            borderRadius: 14,
+            padding: "18px 20px",
+            marginBottom: 14,
+          }}
+        >
+          <label style={{ fontSize: 12, color: textSecondary, fontWeight: 600, letterSpacing: 1 }}>
+            合計金額
+          </label>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+            <span style={{ fontSize: 22, color: accent, fontWeight: 700, flexShrink: 0 }}>¥</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={total === 0 ? "" : String(total)}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^0-9]/g, "");
+                setTotal(raw === "" ? 0 : Math.min(parseInt(raw), 9999999));
+              }}
+              onFocus={(e) => e.target.select()}
+              placeholder="0"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                background: "#13151f",
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 10,
+                padding: "12px 16px",
+                fontSize: 24,
+                fontWeight: 700,
+                color: textPrimary,
+                outline: "none",
+                textAlign: "right",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+            {[10000, 20000, 30000, 50000, 100000].map((amt) => (
+              <button
+                key={amt}
+                onClick={() => setTotal(amt)}
+                style={{
+                  background: total === amt ? accent : "#13151f",
+                  color: total === amt ? bg : textSecondary,
+                  border: `1px solid ${total === amt ? accent : cardBorder}`,
+                  borderRadius: 8,
+                  padding: "6px 12px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+              >
+                {(amt / 10000).toFixed(0)}万
+              </button>
+            ))}
+          </div>
+        </div>
 
-      // Rounding
-      e("div", { style: cardStyle },
-        e("label", { style: labelStyle }, "丸め単位"),
-        e("div", { style: { display: "flex", gap: 6, marginTop: 10 } },
-          ...ROUND_OPTIONS.map((u) =>
-            e("button", {
-              key: u, onClick: () => setRoundUnit(u),
-              style: {
-                ...btnStyle(roundUnit === u),
-                flex: 1, borderRadius: 10, padding: "10px 6px", fontSize: 13, fontWeight: 700,
-              },
-            }, u.toLocaleString() + "円")
-          )
-        )
-      ),
+        {/* Rounding */}
+        <div
+          style={{
+            background: card,
+            border: `1px solid ${cardBorder}`,
+            borderRadius: 14,
+            padding: "18px 20px",
+            marginBottom: 14,
+          }}
+        >
+          <label style={{ fontSize: 12, color: textSecondary, fontWeight: 600, letterSpacing: 1 }}>
+            丸め単位
+          </label>
+          <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+            {ROUND_OPTIONS.map((u) => (
+              <button
+                key={u}
+                onClick={() => setRoundUnit(u)}
+                style={{
+                  flex: 1,
+                  background: roundUnit === u ? accent : "#13151f",
+                  color: roundUnit === u ? bg : textSecondary,
+                  border: `1px solid ${roundUnit === u ? accent : cardBorder}`,
+                  borderRadius: 10,
+                  padding: "10px 6px",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+              >
+                {u.toLocaleString()}円
+              </button>
+            ))}
+          </div>
+        </div>
 
-      // Kanji
-      e("div", { style: { ...cardStyle, border: "1px solid " + accent + "33" } },
-        e("label", { style: { fontSize: 12, color: accent, fontWeight: 700, letterSpacing: 1 } },
-          "🎖️ 幹事（1名・余りをもらう人）"),
-        e("input", {
-          value: kanjiName, placeholder: "幹事の名前（任意）",
-          onChange: (ev) => setKanjiName(ev.target.value),
-          style: {
-            width: "100%", marginTop: 10, background: "#13151f",
-            border: "1px solid " + cardBorder, borderRadius: 10,
-            padding: "10px 14px", fontSize: 15, fontWeight: 600,
-            color: textPrimary, outline: "none", boxSizing: "border-box",
-          },
-        }),
-        e("div", { style: { marginTop: 10 } },
-          e("label", { style: { fontSize: 11, color: textSecondary } }, "幹事の学年"),
-          e("div", { style: { display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" } },
-            ...groups.map((g, i) =>
-              e("button", {
-                key: i, onClick: () => setKanjiGradeIdx(i),
-                style: {
-                  ...btnStyle(i === effectiveKanjiGradeIdx),
-                  padding: "6px 14px", fontSize: 13,
-                },
-              }, g.name)
-            )
-          )
-        ),
-        e("p", { style: { fontSize: 11, color: textSecondary, marginTop: 8 } },
-          "幹事も学年の同額を払い、切り上げの余りだけもらう")
-      ),
+        {/* Kanji */}
+        <div
+          style={{
+            background: card,
+            border: `1px solid ${accent}33`,
+            borderRadius: 14,
+            padding: "18px 20px",
+            marginBottom: 14,
+          }}
+        >
+          <label style={{ fontSize: 12, color: accent, fontWeight: 700, letterSpacing: 1 }}>
+            🎖️ 幹事（1名・余りをもらう人）
+          </label>
+          <input
+            value={kanjiName}
+            onChange={(e) => setKanjiName(e.target.value)}
+            placeholder="幹事の名前（任意）"
+            style={{
+              width: "100%",
+              marginTop: 10,
+              background: "#13151f",
+              border: `1px solid ${cardBorder}`,
+              borderRadius: 10,
+              padding: "10px 14px",
+              fontSize: 15,
+              fontWeight: 600,
+              color: textPrimary,
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+          <div style={{ marginTop: 10 }}>
+            <label style={{ fontSize: 11, color: textSecondary }}>幹事の学年</label>
+            <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+              {groups.map((g, i) => (
+                <button
+                  key={i}
+                  onClick={() => setKanjiGradeIdx(i)}
+                  style={{
+                    background: i === effectiveKanjiGradeIdx ? accent : "#13151f",
+                    color: i === effectiveKanjiGradeIdx ? bg : textSecondary,
+                    border: `1px solid ${i === effectiveKanjiGradeIdx ? accent : cardBorder}`,
+                    borderRadius: 8,
+                    padding: "6px 14px",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {g.name}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p style={{ fontSize: 11, color: textSecondary, marginTop: 8 }}>
+            幹事も学年の同額を払い、切り上げの余りだけもらう
+          </p>
+        </div>
 
-      // Preset
-      e("div", { style: cardStyle },
-        e("label", { style: labelStyle }, "プリセット"),
-        e("div", { style: { display: "flex", gap: 8, marginTop: 10 } },
-          ...PRESETS.map((p, i) =>
-            e("button", {
-              key: i, onClick: () => applyPreset(i),
-              style: {
-                ...btnStyle(presetIdx === i),
-                flex: 1, borderRadius: 10, padding: "10px 8px", fontSize: 13,
-              },
-            }, p.label)
-          )
-        )
-      ),
+        {/* Preset */}
+        <div
+          style={{
+            background: card,
+            border: `1px solid ${cardBorder}`,
+            borderRadius: 14,
+            padding: "18px 20px",
+            marginBottom: 14,
+          }}
+        >
+          <label style={{ fontSize: 12, color: textSecondary, fontWeight: 600, letterSpacing: 1 }}>
+            プリセット
+          </label>
+          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+            {PRESETS.map((p, i) => (
+              <button
+                key={i}
+                onClick={() => applyPreset(i)}
+                style={{
+                  flex: 1,
+                  background: presetIdx === i ? accent : "#13151f",
+                  color: presetIdx === i ? bg : textSecondary,
+                  border: `1px solid ${presetIdx === i ? accent : cardBorder}`,
+                  borderRadius: 10,
+                  padding: "10px 8px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      // Steepness
-      e("div", { style: cardStyle },
-        e("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
-          e("label", { style: labelStyle }, "傾斜の強さ"),
-          e("span", { style: { fontSize: 14, fontWeight: 700, color: accent } }, steepness + "%")
-        ),
-        e("input", {
-          type: "range", min: 0, max: 100, value: steepness,
-          onChange: (ev) => setSteepness(parseInt(ev.target.value)),
-          style: { width: "100%", marginTop: 12 },
-        }),
-        e("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 11, color: textSecondary, marginTop: 4 } },
-          e("span", null, "均等"),
-          e("span", null, "やや傾斜"),
-          e("span", null, "強い傾斜")
-        )
-      ),
+        {/* Steepness */}
+        <div
+          style={{
+            background: card,
+            border: `1px solid ${cardBorder}`,
+            borderRadius: 14,
+            padding: "18px 20px",
+            marginBottom: 14,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <label style={{ fontSize: 12, color: textSecondary, fontWeight: 600, letterSpacing: 1 }}>
+              傾斜の強さ
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={steepnessInput}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^0-9]/g, "");
+                setSteepnessInput(raw);
+                const n = parseInt(raw);
+                if (!isNaN(n)) setSteepness(Math.min(100, Math.max(0, n)));
+              }}
+              onBlur={() => {
+                const clamped = Math.min(100, Math.max(0, parseInt(steepnessInput) || 0));
+                setSteepness(clamped);
+                setSteepnessInput(String(clamped));
+              }}
+              style={{
+                width: 56,
+                background: "#13151f",
+                border: `1px solid ${accent}66`,
+                borderRadius: 8,
+                padding: "4px 8px",
+                fontSize: 15,
+                fontWeight: 700,
+                color: accent,
+                textAlign: "center",
+                outline: "none",
+              }}
+            />
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={steepness}
+            onChange={(e) => {
+              const v = parseInt(e.target.value);
+              setSteepness(v);
+              setSteepnessInput(String(v));
+            }}
+            style={{ width: "100%", marginTop: 12, accentColor: accent, height: 6 }}
+          />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 11,
+              color: textSecondary,
+              marginTop: 4,
+            }}
+          >
+            <span>均等</span>
+            <span>やや傾斜</span>
+            <span>強い傾斜</span>
+          </div>
+        </div>
 
-      // Groups
-      e("div", { style: cardStyle },
-        e("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 } },
-          e("label", { style: labelStyle }, "参加者グループ（" + totalPeople + "名・幹事含む）"),
-          e("button", {
-            onClick: addGroup,
-            style: {
-              background: "#13151f", border: "1px solid " + cardBorder,
-              borderRadius: 8, color: accent, fontSize: 13, fontWeight: 600,
-              padding: "6px 14px", cursor: "pointer",
-            },
-          }, "+ 追加")
-        ),
-        e("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
-          ...groups.map((g, i) =>
-            e("div", { key: i, style: { background: "#13151f", borderRadius: 10, padding: "12px 14px" } },
-              e("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
-                e("input", {
-                  value: g.name,
-                  onChange: (ev) => updateGroup(i, "name", ev.target.value),
-                  style: {
-                    width: 68, background: "transparent", border: "none",
-                    borderBottom: "1px solid " + cardBorder, color: textPrimary,
-                    fontSize: 14, fontWeight: 600, padding: "4px 0", outline: "none",
-                  },
-                }),
-                e("div", { style: { display: "flex", alignItems: "center", gap: 6 } },
-                  e("button", {
-                    onClick: () => updateGroup(i, "count", Math.max(1, g.count - 1)),
-                    style: {
-                      width: 28, height: 28, borderRadius: 7, background: "#1a1d27",
-                      border: "1px solid " + cardBorder, color: textSecondary,
-                      fontSize: 16, cursor: "pointer", display: "flex",
-                      alignItems: "center", justifyContent: "center",
-                    },
-                  }, "−"),
-                  e("span", { style: { fontSize: 16, fontWeight: 700, width: 24, textAlign: "center" } }, g.count),
-                  e("button", {
-                    onClick: () => updateGroup(i, "count", g.count + 1),
-                    style: {
-                      width: 28, height: 28, borderRadius: 7, background: "#1a1d27",
-                      border: "1px solid " + cardBorder, color: textSecondary,
-                      fontSize: 16, cursor: "pointer", display: "flex",
-                      alignItems: "center", justifyContent: "center",
-                    },
-                  }, "+"),
-                  e("span", { style: { fontSize: 11, color: textSecondary } }, "人")
-                ),
-                e("div", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 } },
-                  e("span", { style: { fontSize: 11, color: textSecondary } }, "重み"),
-                  e("input", {
-                    type: "number", inputMode: "numeric",
-                    min: 1, max: 20, value: g.weight,
-                    onChange: (ev) => updateGroup(i, "weight", Math.max(1, parseInt(ev.target.value) || 1)),
-                    style: {
-                      width: 42, background: "#1a1d27", border: "1px solid " + cardBorder,
-                      borderRadius: 7, padding: "4px 6px", fontSize: 14, fontWeight: 700,
-                      color: accent, textAlign: "center", outline: "none",
-                    },
-                  })
-                ),
-                groups.length > 2 ? e("button", {
-                  onClick: () => removeGroup(i),
-                  style: {
-                    width: 24, height: 24, borderRadius: 6, background: "transparent",
-                    border: "none", color: danger, fontSize: 16, cursor: "pointer", opacity: 0.6,
-                  },
-                }, "×") : null
-              )
-            )
-          )
-        )
-      ),
+        {/* Groups */}
+        <div
+          style={{
+            background: card,
+            border: `1px solid ${cardBorder}`,
+            borderRadius: 14,
+            padding: "18px 20px",
+            marginBottom: 14,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <label style={{ fontSize: 12, color: textSecondary, fontWeight: 600, letterSpacing: 1 }}>
+              参加者グループ（{totalPeople}名・幹事含む）
+            </label>
+            <button
+              onClick={addGroup}
+              style={{
+                background: "#13151f",
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 8,
+                color: accent,
+                fontSize: 13,
+                fontWeight: 600,
+                padding: "6px 14px",
+                cursor: "pointer",
+              }}
+            >
+              + 追加
+            </button>
+          </div>
 
-      // Results
-      e("div", { style: {
-        background: "linear-gradient(135deg, #1f2233, #1a1d27)",
-        border: "1px solid " + accent + "33", borderRadius: 14,
-        padding: 20, marginBottom: 16,
-      }},
-        e("label", { style: {
-          fontSize: 12, color: accent, fontWeight: 700,
-          letterSpacing: 1, textTransform: "uppercase",
-        }}, "計算結果"),
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {groups.map((g, i) => (
+              <div
+                key={i}
+                style={{
+                  background: "#13151f",
+                  borderRadius: 10,
+                  padding: "12px 14px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <input
+                    value={g.name}
+                    onChange={(e) => updateGroup(i, "name", e.target.value)}
+                    style={{
+                      width: 68,
+                      background: "transparent",
+                      border: "none",
+                      borderBottom: `1px solid ${cardBorder}`,
+                      color: textPrimary,
+                      fontSize: 14,
+                      fontWeight: 600,
+                      padding: "4px 0",
+                      outline: "none",
+                    }}
+                  />
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <button
+                      onClick={() => updateGroup(i, "count", Math.max(1, g.count - 1))}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 7,
+                        background: "#1a1d27",
+                        border: `1px solid ${cardBorder}`,
+                        color: textSecondary,
+                        fontSize: 16,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      −
+                    </button>
+                    <span style={{ fontSize: 16, fontWeight: 700, width: 24, textAlign: "center" }}>
+                      {g.count}
+                    </span>
+                    <button
+                      onClick={() => updateGroup(i, "count", g.count + 1)}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 7,
+                        background: "#1a1d27",
+                        border: `1px solid ${cardBorder}`,
+                        color: textSecondary,
+                        fontSize: 16,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      +
+                    </button>
+                    <span style={{ fontSize: 11, color: textSecondary }}>人</span>
+                  </div>
+                  <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 11, color: textSecondary }}>重み</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={g.weight}
+                      onChange={(e) => updateGroup(i, "weight", Math.max(1, parseInt(e.target.value) || 1))}
+                      style={{
+                        width: 42,
+                        background: "#1a1d27",
+                        border: `1px solid ${cardBorder}`,
+                        borderRadius: 7,
+                        padding: "4px 6px",
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: accent,
+                        textAlign: "center",
+                        outline: "none",
+                      }}
+                    />
+                  </div>
+                  {groups.length > 2 && (
+                    <button
+                      onClick={() => removeGroup(i)}
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 6,
+                        background: "transparent",
+                        border: "none",
+                        color: danger,
+                        fontSize: 16,
+                        cursor: "pointer",
+                        opacity: 0.6,
+                      }}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
-        e("div", { style: { marginTop: 16, display: "flex", flexDirection: "column", gap: 14 } },
-          ...results
-            .filter((r) => r.count > 0)
-            .sort((a, b) => b.perPerson - a.perPerson)
-            .map((r) => {
-              const maxPer = Math.max(...results.filter((x) => x.count > 0).map((x) => x.perPerson));
-              const barRatio = maxPer > 0 ? r.perPerson / maxPer : 0;
-              return e("div", { key: r.idx },
-                e("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 } },
-                  e("span", { style: { fontWeight: 700, fontSize: 15 } }, r.name),
-                  e("div", { style: { textAlign: "right" } },
-                    e("span", { style: { fontSize: 22, fontWeight: 800, color: accent } },
-                      "¥" + r.perPerson.toLocaleString()),
-                    e("span", { style: { fontSize: 12, color: textSecondary, marginLeft: 4 } }, "/人")
-                  )
-                ),
-                e("div", { style: { height: 8, background: "#13151f", borderRadius: 4, overflow: "hidden", marginBottom: 4 } },
-                  e("div", { style: {
-                    height: "100%", width: (barRatio * 100) + "%",
-                    background: "linear-gradient(90deg, " + accentDim + ", " + accent + ")",
-                    borderRadius: 4, transition: "width 0.3s ease",
-                  }})
-                ),
-                e("div", { style: { fontSize: 11, color: textSecondary } },
-                  r.count + "人 × ¥" + r.perPerson.toLocaleString() + " = ¥" + r.subtotal.toLocaleString())
-              );
-            })
-        ),
+        {/* Results */}
+        <div
+          style={{
+            background: `linear-gradient(135deg, #1f2233, #1a1d27)`,
+            border: `1px solid ${accent}33`,
+            borderRadius: 14,
+            padding: "20px",
+            marginBottom: 16,
+          }}
+        >
+          <label
+            style={{
+              fontSize: 12,
+              color: accent,
+              fontWeight: 700,
+              letterSpacing: 1,
+              textTransform: "uppercase",
+            }}
+          >
+            計算結果
+          </label>
 
-        // Summary
-        e("div", { style: { marginTop: 18, paddingTop: 14, borderTop: "1px solid " + cardBorder } },
-          e("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 13 } },
-            e("span", { style: { color: textSecondary } }, "徴収合計"),
-            e("span", { style: { fontWeight: 700, color: textPrimary } }, "¥" + collectedTotal.toLocaleString())
-          ),
-          e("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 13, marginTop: 4 } },
-            e("span", { style: { color: textSecondary } }, "お会計"),
-            e("span", { style: { fontWeight: 700, color: textPrimary } }, "¥" + total.toLocaleString())
-          ),
+          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+            {results
+              .filter((r) => r.count > 0)
+              .sort((a, b) => b.perPerson - a.perPerson)
+              .map((r) => {
+                const maxPer = Math.max(...results.filter((x) => x.count > 0).map((x) => x.perPerson));
+                const barRatio = maxPer > 0 ? r.perPerson / maxPer : 0;
 
-          // Kanji profit box
-          e("div", { style: {
-            marginTop: 12,
-            background: kanjiProfit > 0 ? success + "15" : cardBorder + "22",
-            border: "1px solid " + (kanjiProfit > 0 ? success : cardBorder) + "44",
-            borderRadius: 12, padding: "14px 16px",
-          }},
-            e("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
-              e("div", null,
-                e("div", { style: { fontSize: 11, color: textSecondary, marginBottom: 2 } }, "🎖️ 幹事"),
-                e("div", { style: { fontSize: 16, fontWeight: 700, color: accent } },
-                  kanjiName || "幹事さん",
-                  e("span", { style: { fontSize: 11, color: textSecondary, fontWeight: 400, marginLeft: 6 } },
-                    "（" + (groups[effectiveKanjiGradeIdx] ? groups[effectiveKanjiGradeIdx].name : "") + "）")
-                )
-              ),
-              e("div", { style: { textAlign: "right" } },
-                e("div", { style: { fontSize: 11, color: textSecondary, marginBottom: 2 } }, "取り分"),
-                e("div", { style: { fontSize: 22, fontWeight: 800, color: kanjiProfit > 0 ? success : textSecondary } },
-                  (kanjiProfit > 0 ? "+" : "") + "¥" + kanjiProfit.toLocaleString())
-              )
-            )
-          ),
+                return (
+                  <div key={r.idx}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "baseline",
+                        marginBottom: 6,
+                      }}
+                    >
+                      <span style={{ fontWeight: 700, fontSize: 15 }}>{r.name}</span>
+                      <div style={{ textAlign: "right" }}>
+                        <span style={{ fontSize: 22, fontWeight: 800, color: accent }}>
+                          ¥{r.perPerson.toLocaleString()}
+                        </span>
+                        <span style={{ fontSize: 12, color: textSecondary, marginLeft: 4 }}>/人</span>
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        height: 8,
+                        background: "#13151f",
+                        borderRadius: 4,
+                        overflow: "hidden",
+                        marginBottom: 4,
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: "100%",
+                          width: `${barRatio * 100}%`,
+                          background: `linear-gradient(90deg, ${accentDim}, ${accent})`,
+                          borderRadius: 4,
+                          transition: "width 0.3s ease",
+                        }}
+                      />
+                    </div>
+                    <div style={{ fontSize: 11, color: textSecondary }}>
+                      {r.count}人 × ¥{r.perPerson.toLocaleString()} = ¥{r.subtotal.toLocaleString()}
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
 
-          e("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 10 } },
-            e("span", { style: { color: textSecondary } }, "均等割りの場合"),
-            e("span", { style: { color: textSecondary } }, "¥" + equalPer.toLocaleString() + "/人")
-          )
-        )
-      ),
+          {/* Summary */}
+          <div
+            style={{
+              marginTop: 18,
+              paddingTop: 14,
+              borderTop: `1px solid ${cardBorder}`,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+              <span style={{ color: textSecondary }}>徴収合計</span>
+              <span style={{ fontWeight: 700, color: textPrimary }}>
+                ¥{collectedTotal.toLocaleString()}
+              </span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginTop: 4 }}>
+              <span style={{ color: textSecondary }}>お会計</span>
+              <span style={{ fontWeight: 700, color: textPrimary }}>¥{total.toLocaleString()}</span>
+            </div>
 
-      e("p", { style: { textAlign: "center", fontSize: 11, color: textSecondary, marginTop: 20, lineHeight: 1.6 } },
-        "※ 幹事も学年の同額を払う。全員切り上げの余りだけ幹事がもらう。"),
+            <div
+              style={{
+                marginTop: 12,
+                background: kanjiProfit > 0 ? `${success}15` : `${cardBorder}22`,
+                border: `1px solid ${kanjiProfit > 0 ? success : cardBorder}44`,
+                borderRadius: 12,
+                padding: "14px 16px",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontSize: 11, color: textSecondary, marginBottom: 2 }}>🎖️ 幹事</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: accent }}>
+                    {kanjiName || "幹事さん"}
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: textSecondary,
+                        fontWeight: 400,
+                        marginLeft: 6,
+                      }}
+                    >
+                      （{groups[effectiveKanjiGradeIdx]?.name}）
+                    </span>
+                  </div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 11, color: textSecondary, marginBottom: 2 }}>取り分</div>
+                  <div
+                    style={{
+                      fontSize: 22,
+                      fontWeight: 800,
+                      color: kanjiProfit > 0 ? success : textSecondary,
+                    }}
+                  >
+                    {kanjiProfit > 0 ? "+" : ""}¥{kanjiProfit.toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            </div>
 
-      // ホーム画面追加の案内
-      e("div", { id: "install-hint", style: {
-        textAlign: "center", marginTop: 16, padding: "14px 16px",
-        background: card, border: "1px solid " + cardBorder,
-        borderRadius: 14, fontSize: 12, color: textSecondary, lineHeight: 1.7,
-      }},
-        e("div", { style: { fontSize: 14, marginBottom: 6 } }, "📱"),
-        e("strong", { style: { color: textPrimary } }, "ホーム画面に追加"),
-        e("br"),
-        "iPhoneの場合：",
-        e("span", { style: { color: accent } }, " 共有ボタン "),
-        "→「ホーム画面に追加」",
-        e("br"),
-        "Androidの場合：",
-        e("span", { style: { color: accent } }, " メニュー "),
-        "→「ホーム画面に追加」"
-      )
-    )
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 10 }}>
+              <span style={{ color: textSecondary }}>均等割りの場合</span>
+              <span style={{ color: textSecondary }}>¥{equalPer.toLocaleString()}/人</span>
+            </div>
+          </div>
+        </div>
+
+        <p style={{ textAlign: "center", fontSize: 11, color: textSecondary, marginTop: 20, lineHeight: 1.6 }}>
+          ※ 幹事も学年の同額を払う。全員切り上げの余りだけ幹事がもらう。
+        </p>
+      </div>
+    </div>
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById("app"));
-root.render(e(WarikanKeisha));
-
-// PWA表示モードで起動した場合はインストールヒントを隠す
-if (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone) {
-  const hint = document.getElementById("install-hint");
-  if (hint) hint.style.display = "none";
-}
-</script>
-
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<WarikanKeisha />);
+  </script>
 </body>
 </html>
