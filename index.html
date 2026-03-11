@@ -348,8 +348,7 @@ function WarikanKeisha() {
     lines.push("━━━━━━━━━━━━━━");
     lines.push("");
     lines.push(`徴収合計：¥${collectedTotal.toLocaleString()}`);
-    return lines.join("
-");
+    return lines.join("\n");
   };
 
   const handleCopy = async () => {
@@ -1213,6 +1212,7 @@ function WarikanKeisha() {
     </div>
   );
 }
+
 
     const root = ReactDOM.createRoot(document.getElementById("root"));
     root.render(<WarikanKeisha />);
