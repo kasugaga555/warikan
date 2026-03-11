@@ -38,7 +38,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.2/babel.min.js"></script>
 
   <script type="text/babel">
-const { useState } = React;
+    const { useState, useEffect, useRef, useCallback } = React;
+
 
 const PRESETS = [
   { label: "大学1〜6年", grades: ["1年", "2年", "3年", "4年", "5年", "6年"] },
@@ -48,27 +49,171 @@ const PRESETS = [
 
 const ROUND_OPTIONS = [10, 100, 500, 1000];
 
-function calcPayments(total, groups, roundUnit) {
+function calcPayments(total, groups, roundUnit, overrides = {}) {
   const totalPeople = groups.reduce((s, g) => s + g.count, 0);
   if (totalPeople === 0 || groups.length === 0) {
     return {
-      results: groups.map((g, i) => ({ ...g, perPerson: 0, subtotal: 0, idx: i })),
+      results: groups.map((g, i) => ({ ...g, perPerson: 0, subtotal: 0, idx: i, isOverridden: false })),
       collectedTotal: 0,
     };
   }
 
-  const avgWeight = groups.reduce((s, g) => s + g.weight * g.count, 0) / totalPeople;
-  const rawPerPerson = total / totalPeople;
+  const hasOverrides = Object.keys(overrides).length > 0;
 
-  const results = groups.map((g, i) => {
-    const ratio = g.weight / avgWeight;
-    const raw = rawPerPerson * ratio;
-    const perPerson = Math.ceil(raw / roundUnit) * roundUnit;
-    return { ...g, perPerson, subtotal: perPerson * g.count, idx: i };
-  });
+  if (!hasOverrides) {
+    const avgWeight = groups.reduce((s, g) => s + g.weight * g.count, 0) / totalPeople;
+    const rawPerPerson = total / totalPeople;
+    const results = groups.map((g, i) => {
+      const ratio = g.weight / avgWeight;
+      const raw = rawPerPerson * ratio;
+      const perPerson = Math.ceil(raw / roundUnit) * roundUnit;
+      return { ...g, perPerson, subtotal: perPerson * g.count, idx: i, isOverridden: false };
+    });
+    const collectedTotal = results.reduce((s, r) => s + r.subtotal, 0);
+    return { results, collectedTotal };
+  }
+
+  const fixedTotal = Object.entries(overrides).reduce((s, [idxStr, perPerson]) => {
+    const idx = parseInt(idxStr);
+    return idx < groups.length ? s + perPerson * groups[idx].count : s;
+  }, 0);
+
+  const remainingTotal = total - fixedTotal;
+  const nonFixedGroups = groups.filter((_, i) => !(i in overrides));
+  const nonFixedPeople = nonFixedGroups.reduce((s, g) => s + g.count, 0);
+
+  let results;
+  if (nonFixedPeople === 0 || nonFixedGroups.length === 0) {
+    results = groups.map((g, i) => {
+      const perPerson = i in overrides ? overrides[i] : 0;
+      return { ...g, perPerson, subtotal: perPerson * g.count, idx: i, isOverridden: i in overrides };
+    });
+  } else {
+    const nonFixedAvgWeight = nonFixedGroups.reduce((s, g) => s + g.weight * g.count, 0) / nonFixedPeople;
+    const nonFixedRawPerPerson = remainingTotal / nonFixedPeople;
+    results = groups.map((g, i) => {
+      if (i in overrides) {
+        const perPerson = overrides[i];
+        return { ...g, perPerson, subtotal: perPerson * g.count, idx: i, isOverridden: true };
+      }
+      const ratio = g.weight / nonFixedAvgWeight;
+      const raw = nonFixedRawPerPerson * ratio;
+      const perPerson = Math.max(0, Math.ceil(raw / roundUnit) * roundUnit);
+      return { ...g, perPerson, subtotal: perPerson * g.count, idx: i, isOverridden: false };
+    });
+  }
 
   const collectedTotal = results.reduce((s, r) => s + r.subtotal, 0);
   return { results, collectedTotal };
+}
+
+// Draggable bar component
+function DraggableBar({ value, maxValue, roundUnit, isOverridden, onDragChange, onDragEnd, accentColor, editColor }) {
+  const barRef = useRef(null);
+  const isDragging = useRef(false);
+
+  const getValueFromX = useCallback((clientX) => {
+    const rect = barRef.current.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const raw = ratio * maxValue;
+    return Math.round(raw / roundUnit) * roundUnit;
+  }, [maxValue, roundUnit]);
+
+  const handleStart = useCallback((clientX) => {
+    isDragging.current = true;
+    const val = getValueFromX(clientX);
+    onDragChange(val);
+  }, [getValueFromX, onDragChange]);
+
+  const handleMove = useCallback((clientX) => {
+    if (!isDragging.current) return;
+    const val = getValueFromX(clientX);
+    onDragChange(val);
+  }, [getValueFromX, onDragChange]);
+
+  const handleEnd = useCallback(() => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    onDragEnd();
+  }, [onDragEnd]);
+
+  useEffect(() => {
+    const onMouseMove = (e) => handleMove(e.clientX);
+    const onMouseUp = () => handleEnd();
+    const onTouchMove = (e) => {
+      if (isDragging.current) e.preventDefault();
+      handleMove(e.touches[0].clientX);
+    };
+    const onTouchEnd = () => handleEnd();
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("touchend", onTouchEnd);
+
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [handleMove, handleEnd]);
+
+  const barRatio = maxValue > 0 ? value / maxValue : 0;
+  const fillColor = isOverridden
+    ? `linear-gradient(90deg, ${editColor}88, ${editColor})`
+    : `linear-gradient(90deg, #92610a, ${accentColor})`;
+
+  return (
+    <div
+      ref={barRef}
+      onMouseDown={(e) => { e.preventDefault(); handleStart(e.clientX); }}
+      onTouchStart={(e) => handleStart(e.touches[0].clientX)}
+      style={{
+        position: "relative",
+        height: 20,
+        background: "#13151f",
+        borderRadius: 6,
+        cursor: "ew-resize",
+        touchAction: "none",
+        userSelect: "none",
+        marginBottom: 4,
+      }}
+    >
+      {/* Fill */}
+      <div
+        style={{
+          position: "absolute",
+          top: 2,
+          left: 2,
+          height: 16,
+          width: `calc(${Math.max(0, barRatio * 100)}% - 4px)`,
+          minWidth: barRatio > 0 ? 4 : 0,
+          background: fillColor,
+          borderRadius: 4,
+          transition: isDragging.current ? "none" : "width 0.15s ease",
+          pointerEvents: "none",
+        }}
+      />
+      {/* Thumb */}
+      <div
+        style={{
+          position: "absolute",
+          top: -2,
+          left: `calc(${barRatio * 100}% - 12px)`,
+          width: 24,
+          height: 24,
+          borderRadius: 12,
+          background: isOverridden ? editColor : accentColor,
+          border: "3px solid #0f1117",
+          boxShadow: `0 0 8px ${isOverridden ? editColor : accentColor}66`,
+          transition: isDragging.current ? "none" : "left 0.15s ease",
+          pointerEvents: "none",
+          display: barRatio >= 0 ? "block" : "none",
+        }}
+      />
+    </div>
+  );
 }
 
 function WarikanKeisha() {
@@ -86,15 +231,25 @@ function WarikanKeisha() {
   const [roundUnit, setRoundUnit] = useState(100);
   const [kanjiName, setKanjiName] = useState("");
   const [kanjiGradeIdx, setKanjiGradeIdx] = useState(null);
+  const [overrides, setOverrides] = useState({});
+  const [editingIdx, setEditingIdx] = useState(null);
+  const [editingValue, setEditingValue] = useState("");
+  const [dragPreview, setDragPreview] = useState(null); // { idx, value }
+  const [copied, setCopied] = useState(false);
 
   const effectiveKanjiGradeIdx =
     kanjiGradeIdx !== null
       ? kanjiGradeIdx
       : groups.reduce((mi, g, i, arr) => (g.weight > arr[mi].weight ? i : mi), 0);
 
+  useEffect(() => {
+    setOverrides({});
+  }, [total, steepness, roundUnit]);
+
   const applyPreset = (idx) => {
     setPresetIdx(idx);
     setKanjiGradeIdx(null);
+    setOverrides({});
     if (idx < 2) {
       setGroups(
         PRESETS[idx].grades.map((name, i) => ({
@@ -109,6 +264,7 @@ function WarikanKeisha() {
   const addGroup = () => {
     setGroups([...groups, { name: `グループ${groups.length + 1}`, count: 1, weight: groups.length + 1 }]);
     setPresetIdx(2);
+    setOverrides({});
   };
 
   const removeGroup = (idx) => {
@@ -116,10 +272,50 @@ function WarikanKeisha() {
     setGroups(groups.filter((_, i) => i !== idx));
     if (kanjiGradeIdx === idx) setKanjiGradeIdx(null);
     else if (kanjiGradeIdx !== null && kanjiGradeIdx > idx) setKanjiGradeIdx(kanjiGradeIdx - 1);
+    const newOverrides = {};
+    Object.entries(overrides).forEach(([k, v]) => {
+      const ki = parseInt(k);
+      if (ki < idx) newOverrides[ki] = v;
+      else if (ki > idx) newOverrides[ki - 1] = v;
+    });
+    setOverrides(newOverrides);
   };
 
   const updateGroup = (idx, field, value) => {
     setGroups(groups.map((g, i) => (i === idx ? { ...g, [field]: value } : g)));
+    if (field === "count" || field === "weight") {
+      setOverrides({});
+    }
+  };
+
+  const startEditing = (resultIdx, currentPerPerson) => {
+    setEditingIdx(resultIdx);
+    setEditingValue(String(currentPerPerson));
+  };
+
+  const commitEdit = () => {
+    if (editingIdx === null) return;
+    const val = parseInt(editingValue.replace(/[^0-9]/g, "")) || 0;
+    const rounded = val === 0 ? 0 : Math.round(val / roundUnit) * roundUnit;
+    setOverrides({ ...overrides, [editingIdx]: Math.max(0, rounded) });
+    setEditingIdx(null);
+    setEditingValue("");
+  };
+
+  const cancelEdit = () => {
+    setEditingIdx(null);
+    setEditingValue("");
+  };
+
+  const removeOverride = (idx) => {
+    const newOverrides = { ...overrides };
+    delete newOverrides[idx];
+    setOverrides(newOverrides);
+  };
+
+  const clearAllOverrides = () => {
+    setOverrides({});
+    setDragPreview(null);
   };
 
   const adjustedGroups = groups.map((g) => ({
@@ -127,10 +323,63 @@ function WarikanKeisha() {
     weight: Math.pow(g.weight, steepness / 50),
   }));
 
-  const { results, collectedTotal } = calcPayments(total, adjustedGroups, roundUnit);
+  const { results, collectedTotal } = calcPayments(total, adjustedGroups, roundUnit, overrides);
   const totalPeople = groups.reduce((s, g) => s + g.count, 0);
   const equalPer = totalPeople > 0 ? Math.round(total / totalPeople) : 0;
   const kanjiProfit = collectedTotal - total;
+  const hasOverrides = Object.keys(overrides).length > 0;
+
+  const buildShareText = () => {
+    const sorted = results
+      .filter((r) => r.count > 0)
+      .sort((a, b) => b.perPerson - a.perPerson);
+    const lines = ["🍻 傾斜割り勘の結果", ""];
+    lines.push(`💰 合計：¥${total.toLocaleString()}`);
+    lines.push(`👥 参加者：${totalPeople}名`);
+    lines.push("");
+    lines.push("━━━━━━━━━━━━━━");
+    sorted.forEach((r) => {
+      if (r.perPerson === 0 && r.isOverridden) {
+        lines.push(`${r.name}（${r.count}人）→ 🆓 タダ！`);
+      } else {
+        lines.push(`${r.name}（${r.count}人）→ ¥${r.perPerson.toLocaleString()}/人`);
+      }
+    });
+    lines.push("━━━━━━━━━━━━━━");
+    lines.push("");
+    lines.push(`徴収合計：¥${collectedTotal.toLocaleString()}`);
+    return lines.join("
+");
+  };
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(buildShareText());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = buildShareText();
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleLineShare = () => {
+    const text = encodeURIComponent(buildShareText());
+    window.open(`https://line.me/R/share?text=${text}`, "_blank");
+  };
+
+  // Max value for bar slider = highest per-person amount × 2, rounded up to nice number
+  const currentMax = Math.max(...results.filter((x) => x.count > 0).map((x) => x.perPerson), 0);
+  const barMaxValue = Math.max(
+    Math.ceil((currentMax * 2) / roundUnit) * roundUnit,
+    roundUnit * 5
+  );
 
   const bg = "#0f1117";
   const card = "#1a1d27";
@@ -141,6 +390,7 @@ function WarikanKeisha() {
   const textSecondary = "#8a8d9a";
   const danger = "#ef4444";
   const success = "#22c55e";
+  const editColor = "#3b82f6";
 
   return (
     <div
@@ -193,7 +443,7 @@ function WarikanKeisha() {
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
-              value={total === 0 ? "" : String(total)}
+              value={total === 0 ? "" : total.toLocaleString().replace(/,/g, "")}
               onChange={(e) => {
                 const raw = e.target.value.replace(/[^0-9]/g, "");
                 setTotal(raw === "" ? 0 : Math.min(parseInt(raw), 9999999));
@@ -483,6 +733,8 @@ function WarikanKeisha() {
                   background: "#13151f",
                   borderRadius: 10,
                   padding: "12px 14px",
+                  opacity: g.count === 0 ? 0.45 : 1,
+                  transition: "opacity 0.2s",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -503,7 +755,7 @@ function WarikanKeisha() {
                   />
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <button
-                      onClick={() => updateGroup(i, "count", Math.max(1, g.count - 1))}
+                      onClick={() => updateGroup(i, "count", Math.max(0, g.count - 1))}
                       style={{
                         width: 28,
                         height: 28,
@@ -599,25 +851,62 @@ function WarikanKeisha() {
             marginBottom: 16,
           }}
         >
-          <label
-            style={{
-              fontSize: 12,
-              color: accent,
-              fontWeight: 700,
-              letterSpacing: 1,
-              textTransform: "uppercase",
-            }}
-          >
-            計算結果
-          </label>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <label
+              style={{
+                fontSize: 12,
+                color: accent,
+                fontWeight: 700,
+                letterSpacing: 1,
+                textTransform: "uppercase",
+              }}
+            >
+              計算結果
+            </label>
+            {hasOverrides && (
+              <button
+                onClick={clearAllOverrides}
+                style={{
+                  background: `${editColor}22`,
+                  border: `1px solid ${editColor}44`,
+                  borderRadius: 8,
+                  color: editColor,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  padding: "4px 10px",
+                  cursor: "pointer",
+                }}
+              >
+                ↺ 自動計算に戻す
+              </button>
+            )}
+          </div>
 
-          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+          {hasOverrides && (
+            <div
+              style={{
+                marginTop: 10,
+                background: `${editColor}11`,
+                border: `1px solid ${editColor}33`,
+                borderRadius: 8,
+                padding: "8px 12px",
+                fontSize: 11,
+                color: editColor,
+                lineHeight: 1.5,
+              }}
+            >
+              ✏️ 手動で金額を変更中 — 固定していないグループは残額から自動計算
+            </div>
+          )}
+
+          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 16 }}>
             {results
               .filter((r) => r.count > 0)
               .sort((a, b) => b.perPerson - a.perPerson)
               .map((r) => {
-                const maxPer = Math.max(...results.filter((x) => x.count > 0).map((x) => x.perPerson));
-                const barRatio = maxPer > 0 ? r.perPerson / maxPer : 0;
+                const isEditing = editingIdx === r.idx;
+                const isFree = r.perPerson === 0 && r.isOverridden;
+                const displayValue = dragPreview && dragPreview.idx === r.idx ? dragPreview.value : r.perPerson;
 
                 return (
                   <div key={r.idx}>
@@ -625,44 +914,154 @@ function WarikanKeisha() {
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
-                        alignItems: "baseline",
+                        alignItems: "center",
                         marginBottom: 6,
                       }}
                     >
-                      <span style={{ fontWeight: 700, fontSize: 15 }}>{r.name}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontWeight: 700, fontSize: 15 }}>{r.name}</span>
+                        {r.isOverridden && (
+                          <button
+                            onClick={() => removeOverride(r.idx)}
+                            title="自動計算に戻す"
+                            style={{
+                              background: `${editColor}22`,
+                              border: `1px solid ${editColor}44`,
+                              borderRadius: 5,
+                              color: editColor,
+                              fontSize: 10,
+                              fontWeight: 600,
+                              padding: "2px 6px",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 3,
+                            }}
+                          >
+                            ✏️ 固定中
+                            <span style={{ fontSize: 12, marginLeft: 2 }}>×</span>
+                          </button>
+                        )}
+                      </div>
                       <div style={{ textAlign: "right" }}>
-                        <span style={{ fontSize: 22, fontWeight: 800, color: accent }}>
-                          ¥{r.perPerson.toLocaleString()}
-                        </span>
-                        <span style={{ fontSize: 12, color: textSecondary, marginLeft: 4 }}>/人</span>
+                        {isEditing ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: 16, color: accent, fontWeight: 700 }}>¥</span>
+                            <input
+                              autoFocus
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={editingValue}
+                              onChange={(e) => {
+                                const raw = e.target.value.replace(/[^0-9]/g, "");
+                                setEditingValue(raw);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") commitEdit();
+                                if (e.key === "Escape") cancelEdit();
+                              }}
+                              onBlur={() => commitEdit()}
+                              style={{
+                                width: 80,
+                                background: "#13151f",
+                                border: `2px solid ${editColor}`,
+                                borderRadius: 8,
+                                padding: "6px 10px",
+                                fontSize: 18,
+                                fontWeight: 700,
+                                color: textPrimary,
+                                textAlign: "right",
+                                outline: "none",
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => startEditing(r.idx, r.perPerson)}
+                            style={{
+                              background: "transparent",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: "2px 0",
+                              display: "flex",
+                              alignItems: "baseline",
+                              gap: 0,
+                            }}
+                          >
+                            {isFree ? (
+                              <span
+                                style={{
+                                  fontSize: 20,
+                                  fontWeight: 800,
+                                  color: success,
+                                }}
+                              >
+                                🆓 タダ！
+                              </span>
+                            ) : (
+                              <>
+                                <span
+                                  style={{
+                                    fontSize: 22,
+                                    fontWeight: 800,
+                                    color: r.isOverridden ? editColor : accent,
+                                    borderBottom: `1px dashed ${r.isOverridden ? editColor : accent}66`,
+                                    paddingBottom: 1,
+                                  }}
+                                >
+                                  ¥{displayValue.toLocaleString()}
+                                </span>
+                                <span style={{ fontSize: 12, color: textSecondary, marginLeft: 4 }}>/人</span>
+                              </>
+                            )}
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <div
-                      style={{
-                        height: 8,
-                        background: "#13151f",
-                        borderRadius: 4,
-                        overflow: "hidden",
-                        marginBottom: 4,
+
+                    {/* Draggable Bar */}
+                    <DraggableBar
+                      value={displayValue}
+                      maxValue={barMaxValue}
+                      roundUnit={roundUnit}
+                      isOverridden={r.isOverridden || (dragPreview && dragPreview.idx === r.idx)}
+                      accentColor={accent}
+                      editColor={editColor}
+                      onDragChange={(val) => {
+                        setDragPreview({ idx: r.idx, value: val });
                       }}
-                    >
-                      <div
-                        style={{
-                          height: "100%",
-                          width: `${barRatio * 100}%`,
-                          background: `linear-gradient(90deg, ${accentDim}, ${accent})`,
-                          borderRadius: 4,
-                          transition: "width 0.3s ease",
-                        }}
-                      />
-                    </div>
+                      onDragEnd={() => {
+                        if (dragPreview && dragPreview.idx === r.idx) {
+                          setOverrides({ ...overrides, [r.idx]: dragPreview.value });
+                        }
+                        setDragPreview(null);
+                      }}
+                    />
+
                     <div style={{ fontSize: 11, color: textSecondary }}>
-                      {r.count}人 × ¥{r.perPerson.toLocaleString()} = ¥{r.subtotal.toLocaleString()}
+                      {r.count}人 × ¥{displayValue.toLocaleString()} = ¥{(displayValue * r.count).toLocaleString()}
+                      {isFree && " 🎉"}
                     </div>
                   </div>
                 );
               })}
           </div>
+
+          {/* Hint */}
+          {!hasOverrides && (
+            <div
+              style={{
+                marginTop: 14,
+                textAlign: "center",
+                fontSize: 11,
+                color: textSecondary,
+                opacity: 0.7,
+              }}
+            >
+              💡 金額タップで直接入力 / バーをドラッグでも変更できます
+            </div>
+          )}
 
           {/* Summary */}
           <div
@@ -683,11 +1082,28 @@ function WarikanKeisha() {
               <span style={{ fontWeight: 700, color: textPrimary }}>¥{total.toLocaleString()}</span>
             </div>
 
+            {collectedTotal < total && hasOverrides && (
+              <div
+                style={{
+                  marginTop: 8,
+                  background: `${danger}15`,
+                  border: `1px solid ${danger}44`,
+                  borderRadius: 8,
+                  padding: "8px 12px",
+                  fontSize: 12,
+                  color: danger,
+                  fontWeight: 600,
+                }}
+              >
+                ⚠️ 徴収合計がお会計より ¥{(total - collectedTotal).toLocaleString()} 不足しています
+              </div>
+            )}
+
             <div
               style={{
                 marginTop: 12,
-                background: kanjiProfit > 0 ? `${success}15` : `${cardBorder}22`,
-                border: `1px solid ${kanjiProfit > 0 ? success : cardBorder}44`,
+                background: kanjiProfit > 0 ? `${success}15` : kanjiProfit < 0 ? `${danger}15` : `${cardBorder}22`,
+                border: `1px solid ${kanjiProfit > 0 ? success : kanjiProfit < 0 ? danger : cardBorder}44`,
                 borderRadius: 12,
                 padding: "14px 16px",
               }}
@@ -715,7 +1131,7 @@ function WarikanKeisha() {
                     style={{
                       fontSize: 22,
                       fontWeight: 800,
-                      color: kanjiProfit > 0 ? success : textSecondary,
+                      color: kanjiProfit > 0 ? success : kanjiProfit < 0 ? danger : textSecondary,
                     }}
                   >
                     {kanjiProfit > 0 ? "+" : ""}¥{kanjiProfit.toLocaleString()}
@@ -731,16 +1147,75 @@ function WarikanKeisha() {
           </div>
         </div>
 
+        {/* Share Buttons */}
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+            marginBottom: 16,
+          }}
+        >
+          <button
+            onClick={handleLineShare}
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              background: "#06C755",
+              border: "none",
+              borderRadius: 12,
+              padding: "14px 16px",
+              fontSize: 15,
+              fontWeight: 700,
+              color: "#fff",
+              cursor: "pointer",
+              transition: "opacity 0.15s",
+            }}
+            onMouseDown={(e) => (e.currentTarget.style.opacity = "0.8")}
+            onMouseUp={(e) => (e.currentTarget.style.opacity = "1")}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
+              <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" />
+            </svg>
+            LINEで送る
+          </button>
+          <button
+            onClick={handleCopy}
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              background: copied ? success : card,
+              border: `1px solid ${copied ? success : cardBorder}`,
+              borderRadius: 12,
+              padding: "14px 16px",
+              fontSize: 15,
+              fontWeight: 700,
+              color: copied ? "#fff" : textPrimary,
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+          >
+            {copied ? "✓ コピーしました" : "📋 テキストをコピー"}
+          </button>
+        </div>
+
         <p style={{ textAlign: "center", fontSize: 11, color: textSecondary, marginTop: 20, lineHeight: 1.6 }}>
           ※ 幹事も学年の同額を払う。全員切り上げの余りだけ幹事がもらう。
+          <br />
+          ※ 金額タップで直接入力 / バーをドラッグでも変更OK。0円＝タダも可。
         </p>
       </div>
     </div>
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<WarikanKeisha />);
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<WarikanKeisha />);
   </script>
 </body>
 </html>
